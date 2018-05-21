@@ -1,0 +1,106 @@
+apply plugin: 'com.android.library'
+apply plugin: 'maven'
+
+project.ext.config = [
+        "moduleSettings"         : [
+                "versionName"      : "1.0.1-SNAPSHOT",//修改为相应的版本名 -SNAPSHOT为debug版， 无-SNAPSHOT为release版
+                "versionCode"      : 1, //修改为相应的版本号
+                "compileSdkVersion": 26,
+                "buildToolsVersion": "26.0.2",
+                "minSdkVersion"    : 15,
+                "targetSdkVersion" : 25],
+
+        "mavenRepositorySettings": [
+                "projectRepository" : "http://10.99.23.146:9090/repository/luckylib/",
+                "snapshotRepository": "http://10.99.23.146:9090/repository/luckylib_snapshot/",
+                "user"              : "lucky",
+                "password"          : "lucky123"],
+
+        "mavenLibraySettings"    : [
+                "libName"   : "share",//修改为相应的模块名
+                "artifactId": "share",//修改为相应的模块名
+                "groupId"   : "com.lucky"]
+]
+setConfigFromExternalParams()
+
+android {
+    compileSdkVersion project.ext.config.moduleSettings.compileSdkVersion
+
+    defaultConfig {
+        minSdkVersion project.ext.config.moduleSettings.minSdkVersion
+        targetSdkVersion project.ext.config.moduleSettings.targetSdkVersion
+        if (project.ext.config.moduleSettings.versionName.contains("-SNAPSHOT")) {
+            defaultPublishConfig "debug"
+            println(project.name + ": defaultPublishConfig is debug")
+        } else {
+            defaultPublishConfig "release"
+            println(project.name + ": defaultPublishConfig is release")
+        }
+
+        versionCode project.ext.config.moduleSettings.versionCode
+        versionName project.ext.config.moduleSettings.versionName
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+
+    compile 'com.android.support:appcompat-v7:25.3.1'
+    compile 'com.tencent.mm.opensdk:wechat-sdk-android-without-mta:1.4.0'
+}
+repositories {
+    jcenter()
+
+    maven {
+        url project.ext.config.mavenRepositorySettings.projectRepository
+    }
+    maven {
+        url project.ext.config.mavenRepositorySettings.snapshotRepository
+    }
+}
+
+uploadArchives {
+    repositories.mavenDeployer {
+        repository(url: project.ext.config.mavenRepositorySettings.projectRepository) {
+            authentication(userName: project.ext.config.mavenRepositorySettings.user, password: project.ext.config.mavenRepositorySettings.password)
+        }
+
+        snapshotRepository(url: project.ext.config.mavenRepositorySettings.snapshotRepository) {
+            authentication(userName: project.ext.config.mavenRepositorySettings.user, password: project.ext.config.mavenRepositorySettings.password)
+        }
+
+        pom.version = project.ext.config.moduleSettings.versionName
+        pom.artifactId = project.ext.config.mavenLibraySettings.artifactId
+        pom.groupId = project.ext.config.mavenLibraySettings.groupId
+        pom.name = project.ext.config.mavenLibraySettings.libName
+        pom.packaging = 'aar'
+    }
+}
+
+def setConfigFromExternalParams() {
+    def config = project.ext.config
+
+    if (project.hasProperty('V_CODE')) {
+        config.moduleSettings.versionCode = Integer.parseInt(V_CODE)
+    } else {
+    }
+
+    if (project.hasProperty('V_NAME')) {
+        config.moduleSettings.versionName = V_NAME
+    } else {
+    }
+
+    println(project.name + ": ext.config: ")
+    println(new groovy.json.JsonBuilder(config).toPrettyString())
+}
